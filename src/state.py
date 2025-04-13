@@ -36,12 +36,18 @@ class State:
 	def load_module(self, module):
 		self.parser.load_module(module)
 
+	def process_command(self, itext):
+		args = shlex.split(itext)
+		command, args, flags = self.parser.parse(args[0], args[1:])
+		ctx = cmdlib.Context(command= command, state= self, page= self.pageman.focus)
+
+		command.invoke(ctx, *args, **flags)
+
 	def handle_input(self, itext):
 		if self.process_commands:
 			if itext.startswith(":"):
 				itext = itext[1:]
-				args = shlex.split(itext)
-				self.parser.parse(args[0], args[1:])
+				self.process_command(itext)
 			else:
 				pass
 

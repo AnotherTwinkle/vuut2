@@ -14,15 +14,24 @@ TARGET_CHANNEL_ID = 1110903386540347404
 
 class Vuut(discord.Client):
 	def __init__(self, state, **kwargs):
-		super().__init__(status = discord.Status.offline, **kwargs)
+		super().__init__(status = discord.Status.online, **kwargs)
 		self.state = state
 
 	async def on_ready(self):
-		for guild in self.guilds:
-			for channel in guild.channels:
-				self.state.pageman.add_page(page.ChannelChatPage(channel, self))
+		landing = page.OptionsPage(window_dimensions = self.state.window_dimensions)
 
-		self.state.pageman.set_focus(self.state.pageman.channel_pages_mapping[TARGET_CHANNEL_ID])
+		for guild in self.guilds:
+			landing.add_line(f"**{guild.name}**")
+			for channel in guild.channels:
+				channel_page = page.ChannelChatPage(channel, self)
+
+				idx = landing.add_option(channel_page)
+				self.state.pageman.add_page(channel_page)
+
+				landing.add_line(8*" " + f'{idx}. #{channel.name}')
+
+		# self.state.pageman.set_focus(self.state.pageman.channel_pages_mapping[TARGET_CHANNEL_ID])
+		self.state.pageman.set_focus(landing)
 
 		if isinstance(self.state.pageman.focus, page.ChannelChatPage) and self.state.pageman.focus.opened == False:
 			self.state.pageman.focus.on_first_open()

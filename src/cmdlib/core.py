@@ -28,9 +28,9 @@ class Parser:
         command, arguments = self._retrive_subcommand(command, arguments)
 
         flags, args = self.parse_flags(arguments)
-        ctx = Context(command= command, parser= self)
+        # ctx = Context(command= command, parser= self)
 
-        return command.invoke(ctx, *args, **flags)
+        return (command, args, flags)
 
     def parse_flags(self, args):
         flags, notflags = ({}, [])
@@ -270,9 +270,11 @@ class Context:
 
     The context object also allows you to access the registered Command object of the command execution."""
 
-    def __init__(self, command, parser, **kwargs):
+    def __init__(self, command, page, state, **kwargs):
         self.command = command
-        self.parser = parser
+        self.page = page
+        self.state = state
+        self.parser = self.state.parser
         self.flags = FlagDict()
 
     def add_flag(self, name, value):

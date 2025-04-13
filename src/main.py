@@ -10,7 +10,7 @@ from client import Vuut
 
 import config 
 
-from token import *
+from secret import *
 from config import *
 from colors import *
 

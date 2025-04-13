@@ -20,7 +20,7 @@ tags
 # Python
 *.pyc
 
-token.py
+secret.py
 todo.txt
 *.log
 

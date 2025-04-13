@@ -8,17 +8,29 @@ import asyncio
 from text import Text, with_prefix
 
 class PageManager:
-	def __init__(self, state):
+	def __init__(self, state, root = None):
 		self.state = state
 		self.pages = []
 		self.channel_pages_mapping = {}
 		self.focus = None
+		self.root = None
 
-	def set_focus(self, page, teardown = True):
+	def go_back(self):
+		previous_page = self.focus.handle_back()
+		if isinstance(previous_page, Page):	
+			self.set_focus(previous_page, teardown = False)
+		else:
+			# Default to the root page
+			self.set_focus(self.root, teardown = False)
+
+	def set_focus(self, page, parent = None, teardown = False):
 		if (teardown and self.focus):
 			self.focus.teardown()
 
 		self.focus = page
+		self.focus.parent = parent
+		if hasattr(self.focus, 'opened'):
+			self.focus.on_first_open()
 
 	def add_page(self, page):
 		self.pages.append(page)
@@ -31,12 +43,11 @@ class PageManager:
 			return
 
 		await self.channel_pages_mapping[channel_id].process_message(message, show_time)
-
 		
 class Page:
-	def __init__(self, parent = None, text = ''):
+	def __init__(self, parent = None, text = '', **kwargs):
 		self.parent = parent
-		self.lines = text.split('\n')
+		self.lines = text.split('\n') if text else []
 
 	def teardown(self):
 		pass
@@ -63,7 +74,7 @@ class ScrollablePage(Page):
 	def __init__(self, *args, **kwargs):
 		super().__init__(*args, **kwargs)
 		self.output_height = 0
-		self.window_dimensions = (0, 0)
+		self.window_dimensions = kwargs.get("window_dimensions", (0, 0))
 
 		self.cur_viewport_lines = self.lines
 		self.current_scroll_head = 0
@@ -103,7 +114,7 @@ class ScrollablePage(Page):
 		# logging.error(self.current_scroll_head)
 
 	def update_viewport_lines(self):
-		# logging.error(self.lines)
+		logging.error(self.lines)
 		lines = []
 		for i in range(len(self.lines)):
 			cur_lines = textwrap.wrap(self.lines[i], self.window_dimensions[1])
@@ -146,6 +157,27 @@ class AutoScrolledPage(ScrollablePage):
 		super().add_line(line)
 		if self.update_scroll_head:
 			self.current_scroll_head = len(self.cur_viewport_lines) - self.true_output_height
+
+class OptionsPage(ScrollablePage):
+	'''
+	This pages offer options that can be navigated with goto
+	'''
+	def __init__(self, options = {}, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+		self.options = options
+
+	def add_option(self, option):
+		length = len(self.options.keys())
+		self.options[length] = option
+		return length
+
+	def on_select(self, idx):
+		return self.options.get(idx, None)
+
+class RootPage(OptionsPage):
+	"""Application root page"""
+	def __init__(self):
+		pass
 
 class ChannelChatPage(AutoScrolledPage):
 	def __init__(self, channel, bot, *args, **kwargs):
@@ -196,3 +228,4 @@ class ChannelChatPage(AutoScrolledPage):
 		history = list(reversed([message async for message in self.channel.history(limit = limit)]))
 		for message in history:
 			await self.process_message(message, show_time = True)
+

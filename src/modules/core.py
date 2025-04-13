@@ -1,5 +1,6 @@
 import cmdlib
 import logging
+import page
 
 class Core(cmdlib.Module):
 	def __init__(self, parser, state, bot):
@@ -26,3 +27,15 @@ class Core(cmdlib.Module):
 
 		else:
 			logging.error(message)
+
+	@cmdlib.command(name = 'select', aliases = ['s'])
+	def select(self, ctx, idx : int):
+		if not isinstance(ctx.page, page.OptionsPage):
+			return
+
+		ctx.state.pageman.set_focus(ctx.page.on_select(idx), parent = ctx.page)
+
+	@cmdlib.command(name = 'back', aliases = ['b'])
+	def back(self, ctx):
+		ctx.state.pageman.go_back()
+
