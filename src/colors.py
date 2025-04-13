@@ -1,0 +1,3 @@
+GREEN = ONLINE = 1
+RED = DND = 2
+YELLOW = IDLE = 3
